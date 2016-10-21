@@ -1,0 +1,207 @@
+#!/bin/sh
+
+## Mount_Check_v1
+## check for unmounted filesystems which are meant to be online (ufs, vxfs, zfs, nfs for Solaris and ext*, nfs for Linux)
+## check for read-only filesystems
+
+# 1.0 initial release
+
+###############
+## Robert Dawson
+## Fujitsu Services
+## 20/10/2016
+###############
+
+
+sol_fs()
+{
+# check for ufs and vxfs mounts
+echo "Testing for UFS and VXFS volumes"
+for i in `cat /etc/vfstab | grep -v "^#" | egrep "vxfs|ufs" | awk '{ print $3 }'`
+do
+	# loop round each mounted filesystem and check for equality
+	# not just containing the string - / would match everything otherwise
+	for j in `df -k | grep "^/dev" | awk '{ print $6 }'`
+	do
+		# debugline
+		#echo "testing ($i) against ($j)"
+		if [ "$i" = "$j" ]
+		then
+			# strings match
+			MATCH=1
+			break
+		else
+			# strings do not match - entry to be mounted does not appear in the currently mounted list
+			MATCH=0
+		fi
+	done
+	if [ $MATCH -eq 1 ]
+	then
+		echo "${GREEN_F}$i is mounted fine. ${NORM}"
+	else
+		echo "${RED_F}$i is not mounted. ${NORM}"
+	fi
+done
+}
+
+sol_nfs()
+{
+echo "Testing for NFS volumes"
+for i in `cat /etc/vfstab | grep -v "^#" | egrep "nfs" | awk '{ print $3 }'`
+do
+	# loop round each mounted filesystem and check for equality
+	# not just containing the string - / would match everything otherwise
+	for j in `df -k | grep ":" | awk '{ print $6 }'`
+	do
+		# debugline
+		#echo "testing ($i) against ($j)"
+		if [ "$i" = "$j" ]
+		then
+			# strings match
+			MATCH=1
+			break
+		else
+			# strings do not match - entry to be mounted does not appear in the currently mounted list
+			MATCH=0
+		fi
+	done
+	if [ $MATCH -eq 1 ]
+	then
+		echo "${GREEN_F}$i is mounted fine. ${NORM}"
+	else
+		echo "${RED_F}$i is not mounted. ${NORM}"
+	fi
+done
+}
+
+sol_zfs()
+{
+echo "Testing for ZFS volumes"
+for i in `zfs list | grep -v MOUNTPOINT | awk '{ print $5 }'`
+do
+	# loop round each mounted filesystem and check for equality
+	# not just containing the string - / would match everything otherwise
+	for j in `df -k | awk '{ print $6 }'`
+	do
+		# debugline
+		#echo "testing ($i) against ($j)"
+		if [ "$i" = "$j" ]
+		then
+			# strings match
+			MATCH=1
+			break
+		else
+			# strings do not match - entry to be mounted does not appear in the currently mounted list
+			MATCH=0
+		fi
+	done
+	if [ $MATCH -eq 1 ]
+	then
+		echo "${GREEN_F}$i is mounted fine. ${NORM}"
+	else
+		echo "${RED_F}$i is not mounted. ${NORM}"
+	fi
+done
+}
+
+sol_ro()
+{
+echo "Testing for ReadOnly FileSystems"
+[ `cat /etc/mnttab | grep "ro," | wc -l` -gt 0 ] && echo "{RED_F}The following filesystems are Read-Only: `cat /etc/mnttab | grep "ro," | awk '{ print $2 }'` ${NORM} "
+}
+
+linux_fs()
+{
+# check for ext4 mounts
+echo "Testing for EXT volumes"
+for i in `cat /etc/fstab | grep -v "^#" | egrep "ext" | awk '{ print $2 }'`
+do
+	# loop round each mounted filesystem and check for equality
+	# not just containing the string - / would match everything otherwise
+	for j in `df -k | grep "^/dev" | awk '{ print $6 }'`
+	do
+		# debugline
+		#echo "testing ($i) against ($j)"
+		if [ "$i" = "$j" ]
+		then
+			# strings match
+			MATCH=1
+			break
+		else
+			# strings do not match - entry to be mounted does not appear in the currently mounted list
+			MATCH=0
+		fi
+	done
+	if [ $MATCH -eq 1 ]
+	then
+		echo -e "${GREEN_F}$i is mounted fine. ${NORM}"
+	else
+		echo -e "${RED_F}$i is not mounted. ${NORM}"
+	fi
+done
+}
+
+linux_nfs()
+{
+echo "Testing for NFS volumes"
+for i in `cat /etc/fstab | grep -v "^#" | egrep "nfs" | awk '{ print $2 }'`
+do
+	# loop round each mounted filesystem and check for equality
+	# not just containing the string - / would match everything otherwise
+	for j in `df -k | grep ":" | awk '{ print $6 }'`
+	do
+		# debugline
+		#echo "testing ($i) against ($j)"
+		if [ "$i" = "$j" ]
+		then
+			# strings match
+			MATCH=1
+			break
+		else
+			# strings do not match - entry to be mounted does not appear in the currently mounted list
+			MATCH=0
+		fi
+	done
+	if [ $MATCH -eq 1 ]
+	then
+		echo -e "${GREEN_F}$i is mounted fine. ${NORM}"
+	else
+		echo -e "${RED_F}$i is not mounted. ${NORM}"
+	fi
+done
+}
+
+linux_ro()
+{
+echo "Testing for ReadOnly FileSystems"
+[ `cat /proc/mounts | grep -e " ro " -e " ro," | wc -l` -gt 0 ] && echo -e "${RED_F} The following filesystems are Read-Only: `cat /proc/mounts | grep " ro" | awk '{ print $2 }'` ${NORM} "
+}
+
+if [ `uname -s` = "SunOS" ]
+then
+	# define colours
+	RED_F="\033[31m"	#red font
+	RED_B="\033[41m"	#red background
+	GREEN_F="\033[32m"	#green font
+	GREEN_B="\033[42m"	#green background
+	NORM="\033[0m"
+	#
+	echo "Solaris"
+	sol_fs
+	sol_nfs
+	sol_zfs
+	sol_ro
+else
+	# define colours
+	RED_F="\e[31m"	#red font
+	RED_B="\e[41m"	#red background
+	GREEN_F="\e[32m"	#green font
+	GREEN_B="\e[42m"	#green background
+	NORM="\e[39m"
+	#
+	echo "Linux"
+	linux_fs
+	linux_nfs
+	linux_ro
+fi
+
