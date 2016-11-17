@@ -3,7 +3,7 @@ Checks a server (Solaris or Linux) to ensure all mounts are present and that no 
 check for any unmounted filesystems which are meant to be online (ufs, vxfs, zfs, nfs for Solaris and ext*, nfs for Linux)
 check for read-only filesystems
 
-cifs functionality still to be added (both mounts and exports)
+cifs functionality still to be added (for exports)
 nfs export functionality to be added
 
 how to run:
