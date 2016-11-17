@@ -171,6 +171,36 @@ do
 done
 }
 
+linux_cifs() 
+{ 
+echo "Testing for CIFS volumes" 
+for i in `cat /etc/fstab | grep -v "^#" | egrep "cifs" | awk '{ print $2 }'` 
+do  
+	# loop round each mounted filesystem and check for equality  
+	# not just containing the string - / would match everything otherwise  
+	for j in `df -k | grep "%" | awk '{ print $NF }'`  
+	do   
+		# debugline   
+		#echo "testing ($i) against ($j)"   
+		if [ "$i" = "$j" ]   
+		then    
+			# strings match    
+			MATCH=1    	
+			break   
+		else    
+			# strings do not match - entry to be mounted does not appear in the currently mounted list    
+			MATCH=0   
+		fi  
+	done  
+	if [ $MATCH -eq 1 ]  
+	then   
+		echo -e "${GREEN_F}$i is mounted fine. ${NORM}"  
+	else   
+		echo -e "${RED_F}$i is not mounted. ${NORM}"  
+	fi 
+done 
+} 
+
 linux_ro()
 {
 echo "Testing for ReadOnly FileSystems"
@@ -201,7 +231,8 @@ else
 	#
 	echo "Linux"
 	linux_fs
-	linux_nfs
+	linux_nfs		
+	linux_cifs
 	linux_ro
 fi
 
